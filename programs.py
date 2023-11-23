@@ -18,25 +18,25 @@ def get_stack_of_program_limits(lines):
     """
     Finds lines that mark the beginning or the end of a program execution.
     Returns a list of dictionaries which have the entry 'type' marking
-    either a start or an end of a program; and the 'line' which is a number
-    of the outputline with first line being numbered zero.
+    either a start or an end of a program; and the entry 'line' marking the
+    output line (first line being numbered zero).
     """
     sec_head = "--invoking executable--"
     sec_end = "--executable"
     stack = []
 
     # Collect key points
-    for ln_f0, line in enumerate(lines):
+    for ln, line in enumerate(lines):
         if line.strip().startswith(sec_head):
             node = {
                 'type': 'head',
-                'line': ln_f0,
+                'line': ln,
             }
             stack.append(node)
         elif line.strip().startswith(sec_end):
             node = {
                 'type': 'end',
-                'line': ln_f0,
+                'line': ln,
             }
             stack.append(node)
 
