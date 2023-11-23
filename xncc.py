@@ -25,18 +25,17 @@ def cool_lines_in_xncc(xncc):
     if xncc['name'] != 'xncc':
         return
 
-    double = r'\s*(-?\d+\.\d+)\s*'
     highlights = [
         {'pattern': re.compile(
-            'Simulation and memory analysis took' + double + 'seconds'),
+            'Simulation and memory analysis took' + FLOAT_WS + 'seconds'),
             'name': 'mem',
             'type': 'end',
          },
-        {'pattern': re.compile(r'MP2 correlation energy:' + double),
+        {'pattern': re.compile(r'MP2 correlation energy:' + FLOAT_WS),
             'name': 'mp2',
             'type': 'start',
          },
-        {'pattern': re.compile(r'Total MP2 energy:' + double),
+        {'pattern': re.compile(r'Total MP2 energy:' + FLOAT_WS),
          'name': 'mp2',
          'type': 'end',
          },
@@ -45,12 +44,12 @@ def cool_lines_in_xncc(xncc):
          'name': 'ccsd',
          'type': 'start',
          },
-        {'pattern': re.compile(r'Total CCSD energy:' + double),
+        {'pattern': re.compile(r'Total CCSD energy:' + FLOAT_WS),
          'name': 'ccsd',
          'type': 'end',
          },
-        {'pattern': re.compile(r'Formation of H took' + double + 'seconds at'
-                               + double + 'Gflops/sec'),
+        {'pattern': re.compile(r'Formation of H took' + FLOAT_WS + 'seconds at'
+                               + FLOAT_WS + 'Gflops/sec'),
 
          'name': 'eom',
          'type': 'start',
