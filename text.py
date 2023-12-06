@@ -75,4 +75,4 @@ def print_section(section):
     print(f"\nPrinting section: {section['name']}\n")
     start = section['start']
     for ln, line in enumerate(section['lines']):
-        print(f"{start + ln:6d}: {line[:-1]}")
+        print(f"{start + ln:6d}:{line[:-1]}")
