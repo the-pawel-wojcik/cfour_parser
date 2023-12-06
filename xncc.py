@@ -40,12 +40,12 @@ def cool_lines_in_xncc(xncc):
          'type': 'end',
          },
         {'pattern': re.compile(
-            r'Beginning iterative solution of CCSD equations:'),
-         'name': 'ccsd',
+            r'Beginning iterative solution of (CCSD|CCSDT|CCSDTQ) equations:'),
+         'name': 'cc',
          'type': 'start',
          },
-        {'pattern': re.compile(r'Total CCSD energy:' + FLOAT_WS),
-         'name': 'ccsd',
+        {'pattern': re.compile(r'Total CC(?:SD|SDT|SDTQ) energy:' + FLOAT_WS),
+         'name': 'cc',
          'type': 'end',
          },
         {'pattern': re.compile(r'Formation of H took' + FLOAT_WS + 'seconds at'
@@ -76,6 +76,116 @@ def cool_lines_in_xncc(xncc):
             break
 
     return catches
+
+
+def get_cc_lines_from_xncc(xncc, catches):
+    """
+    This function should be generalized to extract lines of all catches
+    """
+    last_end = None  # Line where the last catch of the 'end' 'type' appears
+    cc_start_ln = None
+    cc_end_ln = None
+    data = dict()
+    for catch in catches:
+        line = catch['line']
+
+        # keep track of the last ending of a section
+        if catch['type'] == 'end':
+            if last_end is None or last_end < line:
+                last_end = line
+
+        # fish for CC
+        if catch['name'] == 'cc':
+            if catch['type'] == 'start':
+                cc_start_ln = line
+                data['CC level'] = catch['match'].group(1)
+                continue
+            elif catch['type'] == 'end':
+                cc_end_ln = line
+                data['energy'] = {
+                    'total': {
+                        'au': float(catch['match'].group(1)),
+                    },
+                }
+                continue
+            print("Warrning unrecognized CC header in xncc\n"
+                  f"{catch=}", file=sys.errstr)
+
+    if cc_start_ln is None:
+        print("Warning! No beginning of the CC section found in xncc",
+              file=sys.errstr)
+        return
+
+    if cc_end_ln is None:
+        print("Error! Problem in parsing CC of xncc.", file=sys.errstr)
+        pass
+
+    cc_section = {
+        'name': 'ccsd',
+        'start': xncc['start'] + cc_start_ln,
+        'end':  xncc['start'] + cc_end_ln,
+        'lines': xncc['lines'][cc_start_ln:cc_end_ln+1],
+        'sections': list(),
+        'data': data,
+    }
+
+    return cc_section
+
+
+def parse_xncc_cc(xncc_cc):
+    """ The CC section of the xncc program. """
+
+    lines = xncc_cc['lines']
+    # from text import print_section
+    # print_section(xncc_cc)
+
+    # TODO: this is the tokenizer of the CC section of the xncc program.
+    iterations_start = None
+    iterations_end = None
+    it_start_pattern = re.compile(
+        r'\s*Beginning iterative solution of '
+        r'(CCSD|CCSDT|CCSDTQ) equations:')
+    it_end_pattern = re.compile(
+        r'CC(?:SD|SDT|SDTQ) iterations converged in' +
+        INT_WS + r'cycles and' + FLOAT_WS + r'seconds \(' +
+        FLOAT_WS + r's/it.\) at' + FLOAT_WS + r'Gflops/sec')
+
+    data = dict()
+
+    for ln, line in enumerate(lines):
+        it_start_match = it_start_pattern.match(line)
+        if it_start_match is not None:
+            iterations_start = ln
+            data['CC model'] = it_start_match.group(1)
+            continue
+        it_end_match = it_end_pattern.match(line)
+        if it_end_match is not None:
+            iterations_end = ln
+            data['# iterations'] = int(it_end_match.group(1))
+            data['time, sec'] = float(it_end_match.group(2))
+            data['Gflops/s'] = float(it_end_match.group(4))
+            continue
+
+    if iterations_start is None:
+        print("Error in parsing CC section of xncc.\n\t"
+              "No beginning of the CC iterations found.", file=sys.stderr)
+        return
+
+    if iterations_end is None:
+        print("Error in parsing CC section of xncc.\n\t"
+              "No end of the CC iterations found.", file=sys.stderr)
+        return
+
+    xncc_cc['sections'] += [{
+        'name': 'iterations',
+        'start': xncc_cc['start'] + iterations_start,
+        'end': xncc_cc['start'] + iterations_end,
+        'lines': lines[iterations_start: iterations_end + 1],
+        'sections': list(),
+        'data': data,
+    }]
+
+    # TODO: Parse iterations section
 
 
 def get_eom_lines_from_xncc(xncc, catches):
@@ -446,11 +556,22 @@ def main():
 
         if program['name'] != 'xncc':
             continue
+
         program['sections'] = []
+
         catches = cool_lines_in_xncc(program)
+        # TODO: catches should be turned into sections. Each section should
+        # contain the keys: name, start, end, lines, sections, data.
+        # The sections should be looped over and parsed if a parser is
+        # available
+
         eom_section = get_eom_lines_from_xncc(program, catches)
         parse_xncc_eom(eom_section)
         program['sections'] += [eom_section]
+
+        cc_section = get_cc_lines_from_xncc(program, catches)
+        parse_xncc_cc(cc_section)
+        program['sections'] += [cc_section]
 
     if args.json is True:
         print(json.dumps(programs))
