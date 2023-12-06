@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
 
 import argparse
-from parsers.programs import find_programs
 import sys
 import json
 import re
+from parsers.programs import find_programs
 from parsers.text import FLOAT, INT, FLOAT_WS, INT_WS, pretty_introduce_section
 
 
@@ -59,7 +59,8 @@ def cool_lines_in_xncc(xncc):
         #  'type': '',
         #  },
     ]
-    catches = []
+
+    catches = list()
     for ln, line in enumerate(xncc['lines']):
         for highlight in highlights:
             pattern = highlight['pattern']
@@ -141,7 +142,7 @@ def skip_to(what: str, lines, ln: int):
 
 
 def skip_to_empty_line(lines, ln: int):
-    # Skips to an empty line
+    """ Skips to an empty line """
     while True:
         if lines[ln].strip() == "":
             break
@@ -172,10 +173,11 @@ def parse_singles_of_converged_root(lines, ln, lines_offset):
 
         for match in matchlist:
             singles += [{
-                "MO A:": int(match[0]),
-                "MO I:": int(match[1]),
+                "A": int(match[0]),
+                "I": int(match[1]),
                 "amplitude": float(match[2]),
             }]
+    singles.sort(key=lambda x: abs(x['amplitude']), reverse=True)
     return ln, singles
 
 
@@ -197,13 +199,13 @@ def parse_doubles_of_converged_root(lines, ln, lines_offset):
 
         for match in matchlist:
             doubles += [{
-                "MO A:": int(match[0]),
-                "MO B:": int(match[1]),
-                "MO I:": int(match[2]),
-                "MO J:": int(match[3]),
+                "A": int(match[0]),
+                "B": int(match[1]),
+                "I": int(match[2]),
+                "J": int(match[3]),
                 "amplitude": float(match[4]),
             }]
-
+    doubles.sort(key=lambda x: abs(x['amplitude']), reverse=True)
     return ln, doubles
 
 
@@ -396,7 +398,7 @@ def parse_xncc_eom_irrep(xncc_eom, irrep_start, end_line):
         'lines': irrep_lines,
         'sections': roots,
         'data': {
-            'irrep #': irrep_no,
+            '#': irrep_no,
             '# of roots': no_states,
         },
     }
@@ -404,7 +406,7 @@ def parse_xncc_eom_irrep(xncc_eom, irrep_start, end_line):
 
 
 def parse_xncc_eom(xncc_eom):
-    # The EOM section splits into subsections, one for each irrep
+    """ The EOM section splits into subsections, one for each irrep """
     xncc_eom['sections'] = []
     lines = xncc_eom['lines']
 
