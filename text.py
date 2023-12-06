@@ -34,7 +34,7 @@ def str_eom_state(state):
     return pretty
 
 
-def pretty_introduce_section(section):
+def pretty_introduce_section(section, level: int = 0):
     """
     A common storage data type I use is a section.
     It is a dictionary with keys:
@@ -45,5 +45,32 @@ def pretty_introduce_section(section):
         'sections'
         'data'
     """
-    print(f"{section['start']:4d} - {section['end']:4d}: "
-          f"{section['name']}")
+    introduction = f"{section['start']:4d} - {section['end']:4d}: "
+    introduction += f"{section['name']}"
+    if level > 0:
+        if 'sections' in section.keys():
+            introduction += " =>"
+            for subsec in section['sections']:
+                introduction += f" {subsec['name']},"
+            introduction = introduction[:-1]
+
+        if 'data' in section.keys():
+            introduction += " => "
+            for data in section['data']:
+                if type(data) is dict:
+                    if 'name' in data.keys():
+                        introduction += f" {data['name']}"
+                    else:
+                        introduction += f" {data=}"
+                else:
+                    introduction += f" {data=}"
+
+    print(introduction)
+
+
+def print_section(section):
+    """ Prints section to the standard output. """
+    print(f"\nPrinting section: {section['name']}\n")
+    start = section['start']
+    for ln, line in enumerate(section['lines']):
+        print(f"{start + ln:6d}: {line[:-1]}")
