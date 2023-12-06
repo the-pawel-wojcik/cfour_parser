@@ -1,16 +1,12 @@
 #!/usr/bin/env python3
 
 import argparse
-import sys
 import json
 import re
 from parsers.programs import find_programs
+from parsers.util import fortran_float_to_float
 from parsers.text import FLOAT, INT, FLOAT_WS, INT_WS, FRTRN_FLOAT, \
     pretty_introduce_section
-
-
-def fortran_float_to_float(frtr: str):
-    return float(frtr.replace('D', 'e'))
 
 
 def get_args():
