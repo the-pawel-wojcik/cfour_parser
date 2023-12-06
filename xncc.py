@@ -4,6 +4,7 @@ import argparse
 import sys
 import json
 import re
+from parsers.utils import skip_to, skip_to_empty_line
 from parsers.programs import find_programs
 from parsers.text import FLOAT, INT, FLOAT_WS, INT_WS, pretty_introduce_section
 
@@ -121,7 +122,7 @@ def get_cc_lines_from_xncc(xncc, catches):
         pass
 
     cc_section = {
-        'name': 'ccsd',
+        'name': 'cc',
         'start': xncc['start'] + cc_start_ln,
         'end':  xncc['start'] + cc_end_ln,
         'lines': xncc['lines'][cc_start_ln:cc_end_ln+1],
@@ -233,36 +234,6 @@ def get_eom_lines_from_xncc(xncc, catches):
         'lines': xncc['lines'][eom_start_ln:eom_end_ln+1]
     }
     return eom_section
-
-
-def skip_to(what: str, lines, ln: int):
-    # Skip to the line that matches what
-    pattern = re.compile(what)
-    while True:
-        match = pattern.match(lines[ln].strip())
-        if match is not None:
-            break
-        ln += 1
-        if ln >= len(lines):
-            print("Error in parsing eom roots in xncc", file=sys.stderr)
-            print(f"Did not find {what}", file=sys.stderr)
-            break
-
-    return ln
-
-
-def skip_to_empty_line(lines, ln: int):
-    """ Skips to an empty line """
-    while True:
-        if lines[ln].strip() == "":
-            break
-        ln += 1
-        if ln >= len(lines):
-            print("Error in parsing eom roots in xncc", file=sys.stderr)
-            print("Did not find an empty line", file=sys.stderr)
-            break
-
-    return ln
 
 
 def parse_singles_of_converged_root(lines, ln, lines_offset):
@@ -545,6 +516,27 @@ def parse_xncc_eom(xncc_eom):
         xncc_eom['sections'] += [eom_irrep_states]
 
 
+def parse_xncc_program(xncc, args):
+
+    if 'sections' not in xncc:
+        xncc['sections'] = list()
+
+    catches = cool_lines_in_xncc(xncc)
+
+    # TODO: catches should be turned into sections. Each section should
+    # contain the keys: name, start, end, lines, sections, data.
+    # The sections should be looped over and parsed if a parser is
+    # available
+
+    cc_section = get_cc_lines_from_xncc(xncc, catches)
+    parse_xncc_cc(cc_section)
+    xncc['sections'] += [cc_section]
+
+    eom_section = get_eom_lines_from_xncc(xncc, catches)
+    parse_xncc_eom(eom_section)
+    xncc['sections'] += [eom_section]
+
+
 def main():
     args = get_args()
     with open(args.cfour_output, 'r') as cfour_output:
@@ -557,21 +549,7 @@ def main():
         if program['name'] != 'xncc':
             continue
 
-        program['sections'] = []
-
-        catches = cool_lines_in_xncc(program)
-        # TODO: catches should be turned into sections. Each section should
-        # contain the keys: name, start, end, lines, sections, data.
-        # The sections should be looped over and parsed if a parser is
-        # available
-
-        eom_section = get_eom_lines_from_xncc(program, catches)
-        parse_xncc_eom(eom_section)
-        program['sections'] += [eom_section]
-
-        cc_section = get_cc_lines_from_xncc(program, catches)
-        parse_xncc_cc(cc_section)
-        program['sections'] += [cc_section]
+        parse_xncc_program(program, args)
 
     if args.json is True:
         print(json.dumps(programs))
