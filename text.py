@@ -9,6 +9,8 @@ INT = r'([+-]?\d+)'
 FLOAT_WS = r'\s*([+-]?\d+\.\d+)\s*'
 INT_WS = r'\s*([+-]?\d+)\s*'
 
+FRTRN_FLOAT = r'([+-]?\d+\.\d+D-?\d+)'
+
 
 def str_eom_state(state):
     """
