@@ -92,6 +92,10 @@ def parse_xjoda_sections(xjoda):
                     'internal_name': internal_name,
                     'value': value,
                 }
+            if 'data' in section:
+                section['data'].update(data)
+            else:
+                section['data'] = data
 
 
 def parse_xjoda_program(xjoda, args):
