@@ -4,7 +4,7 @@ import argparse
 import sys
 import json
 import re
-from parsers.utils import skip_to, skip_to_empty_line
+from parsers.util import skip_to, skip_to_empty_line
 from parsers.programs import find_programs
 from parsers.text import FLOAT, INT, FLOAT_WS, INT_WS, pretty_introduce_section
 
