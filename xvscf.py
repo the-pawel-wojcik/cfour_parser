@@ -3,10 +3,11 @@
 import argparse
 import json
 import re
+from parsers.util import skip_to, skip_to_empty_line
 from parsers.programs import find_programs
 from parsers.util import fortran_float_to_float
 from parsers.text import FLOAT, INT, FLOAT_WS, INT_WS, FRTRN_FLOAT, \
-    pretty_introduce_section
+    pretty_introduce_section, print_section
 
 
 def get_args():
@@ -27,11 +28,19 @@ def cool_lines_in_xvscf(xvscf):
         return
 
     highlights = [
-        {'pattern': re.compile(r'\s*E\(SCF\)=\s+' + FLOAT
-                               + r'\s+' + FRTRN_FLOAT),
+        {
+            'pattern': re.compile(r'\s*E\(SCF\)=\s+' + FLOAT
+                                  + r'\s+' + FRTRN_FLOAT),
             'name': 'energy',
             'type': 'oneline',
-         },
+        },
+        {
+            'pattern': re.compile(
+                r'\s*ORBITAL EIGENVALUES \(ALPHA\)  \(1H = 27.2113819 eV\)'
+            ),
+            'name': 'MOs',
+            'type': 'start',
+        },
         # {'pattern': re.compile(r''),
         #  'name': '',
         #  'type': '',
@@ -56,15 +65,100 @@ def cool_lines_in_xvscf(xvscf):
     return catches
 
 
+def parse_MO_line(line):
+
+    split_no = 57
+    numbers = line[0:split_no]
+    symmetries = line[split_no:-1]
+
+    mo_pattern = re.compile(r'\s*' + INT + r'\s+' +
+                            INT + r'\s+' + FLOAT + r'\s+' + FLOAT)
+    mo_match = mo_pattern.match(numbers)
+    if mo_match is None:
+        raise RuntimeError(f"Listing of MOs contains an invalid line:\n{line}")
+
+    ids = {
+        'energy #': int(mo_match.group(1)),
+        '#': int(mo_match.group(2)),
+    }
+
+    eigenvalues = {
+        'au': float(mo_match.group(3)),
+        'eV': float(mo_match.group(4)),
+    }
+
+    fullsymm = symmetries[0:8].strip()
+    compsymm = symmetries[8:].split()
+    irrep = {
+        'name': compsymm[0],
+        '#': int(compsymm[1][1:-1]),
+    }
+
+    mo = {
+        'ids': ids,
+        'E': eigenvalues,
+        'compsymm': irrep,
+        'fullsymm': fullsymm,
+    }
+
+    return mo
+
+
+def turn_xvscf_catches_into_sections(catches, xvscf):
+    lines = xvscf['lines']
+    for catch in catches:
+        if catch['name'] == 'MOs':
+            start = catch['line']
+
+            header_pattern = re.compile(
+                r'\s*MO\s*#\s*E\(hartree\)\s*E\(eV\)\s*FULLSYM\s*COMPSYM')
+
+            header_match = header_pattern.match(lines[start+2])
+            if header_match is None:
+                raise RuntimeError(
+                    "Error! The MOs listing in xvscf is missing a header."
+                )
+
+            MO_TYPE_SEPARATOR = r'\+' * 77
+            occupied_start = start + 4
+            occupied_end = skip_to(MO_TYPE_SEPARATOR, lines, start + 4)
+
+            occupied = []
+            for line in lines[occupied_start:occupied_end]:
+                mo = parse_MO_line(line)
+                occupied += [mo]
+
+            virtual_end = skip_to_empty_line(lines, occupied_end)
+
+            virtual = []
+            for line in lines[occupied_end+1:virtual_end]:
+                mo = parse_MO_line(line)
+                virtual += [mo]
+
+            mos = {
+                'name': 'MOs',
+                'start': xvscf['start'] + start,
+                'end': xvscf['start'] + virtual_end - 1,
+                'lines': lines[start: virtual_end],
+                'sections': list(),
+                'data': {
+                    'occupied': occupied,
+                    'virtual': virtual,
+                }
+            }
+            xvscf['sections'] += [mos]
+
+
 def parse_xvscf_program(xvscf, args):
 
     if args.verbose is True:
         pretty_introduce_section(xvscf)
 
     if 'sections' not in xvscf:
-        xvscf['sections'] = []
+        xvscf['sections'] = list()
 
     catches = cool_lines_in_xvscf(xvscf)
+    turn_xvscf_catches_into_sections(catches, xvscf)
 
     # TODO: catches should be turned into sections. Each section should
     # contain the keys: name, start, end, lines, sections, data.
@@ -94,11 +188,9 @@ def main():
     with open(args.cfour_output, 'r') as cfour_output:
         programs = find_programs(cfour_output)
 
-    for xvscf in programs:
-        if xvscf['name'] != 'xvscf':
-            continue
-
-        parse_xvscf_program(xvscf, args)
+    for program in programs:
+        if program['name'] == 'xvscf':
+            parse_xvscf_program(program, args)
 
     if args.json is True:
         print(json.dumps(programs))
