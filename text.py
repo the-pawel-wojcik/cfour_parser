@@ -50,17 +50,18 @@ def pretty_introduce_section(section, level: int = 0):
     introduction = f"{section['start']:4d} - {section['end']:4d}: "
     introduction += f"{section['name']}"
     if level > 0:
-        if 'sections' in section.keys():
+        if 'sections' in section:
             introduction += " =>"
             for subsec in section['sections']:
                 introduction += f" {subsec['name']},"
-            introduction = introduction[:-1]
+            if len(section['sections']) > 0:
+                introduction = introduction[:-1]
 
-        if 'data' in section.keys():
+        if 'data' in section:
             introduction += " => "
             for data in section['data']:
                 if type(data) is dict:
-                    if 'name' in data.keys():
+                    if 'name' in data:
                         introduction += f" {data['name']}"
                     else:
                         introduction += f" {data=}"
