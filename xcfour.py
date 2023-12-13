@@ -5,6 +5,7 @@ import json
 from parsers.programs import find_programs
 from parsers.xjoda import parse_xjoda_program
 from parsers.xvscf import parse_xvscf_program
+from parsers.xdqcscf import parse_xdqcscf_program
 from parsers.xncc import parse_xncc_program
 
 
@@ -25,8 +26,13 @@ def main():
     for program in programs:
         if program['name'] == 'xjoda':
             parse_xjoda_program(program, args)
+
         if program['name'] == 'xvscf':
             parse_xvscf_program(program, args)
+
+        if program['name'] == 'xdqcscf':
+            parse_xdqcscf_program(program, args)
+
         if program['name'] == 'xncc':
             parse_xncc_program(program, args)
 
