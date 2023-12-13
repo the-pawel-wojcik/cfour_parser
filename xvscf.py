@@ -6,8 +6,7 @@ import re
 from parsers.util import skip_to, skip_to_empty_line
 from parsers.programs import find_programs
 from parsers.util import fortran_float_to_float
-from parsers.text import FLOAT, INT, FLOAT_WS, INT_WS, FRTRN_FLOAT, \
-    pretty_introduce_section, print_section
+from parsers.text import FLOAT, INT, FRTRN_FLOAT, pretty_introduce_section
 
 
 def get_args():
@@ -155,10 +154,7 @@ def turn_xvscf_catches_into_sections(catches, xvscf):
             xvscf['sections'] += [mos]
 
 
-def parse_xvscf_program(xvscf, args):
-
-    if args.verbose is True:
-        pretty_introduce_section(xvscf)
+def parse_xvscf_program(xvscf):
 
     if 'sections' not in xvscf:
         xvscf['sections'] = list()
@@ -196,7 +192,10 @@ def main():
 
     for program in programs:
         if program['name'] == 'xvscf':
-            parse_xvscf_program(program, args)
+            parse_xvscf_program(program)
+
+            if args.verbose is True:
+                pretty_introduce_section(program, 1)
 
     if args.json is True:
         print(json.dumps(programs))

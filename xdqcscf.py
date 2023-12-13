@@ -85,16 +85,7 @@ def turn_xdqcscf_catches_into_sections_and_data(catches, xdqcscf):
     xdqcscf['data'].update(data)
 
 
-def parse_xdqcscf_program(xdqcscf, args):
-
-    if args.verbose is True:
-        pretty_introduce_section(xdqcscf)
-
-    if 'sections' not in xdqcscf:
-        xdqcscf['sections'] = list()
-
-    if 'data' not in xdqcscf:
-        xdqcscf['data'] = dict()
+def parse_xdqcscf_program(xdqcscf):
 
     catches = cool_lines_in_xdqcscf(xdqcscf)
     turn_xdqcscf_catches_into_sections_and_data(catches, xdqcscf)
@@ -112,7 +103,11 @@ def main():
 
     for program in programs:
         if program['name'] == 'xdqcscf':
-            parse_xdqcscf_program(program, args)
+
+            parse_xdqcscf_program(program)
+
+            if args.verbose is True:
+                pretty_introduce_section(program)
 
     if args.json is True:
         print(json.dumps(programs))

@@ -47,26 +47,21 @@ def pretty_introduce_section(section, level: int = 0):
         'sections'
         'data'
     """
-    introduction = f"{section['start']:4d} - {section['end']:4d}: "
+    introduction = f"{section['start']:5d} - {section['end']:5d}: "
+    padding = ' ' * len(introduction)
     introduction += f"{section['name']}"
     if level > 0:
-        if 'sections' in section:
-            introduction += " =>"
+        if len(section['sections']) > 0:
+            introduction += '\n' + padding + " =>"
             for subsec in section['sections']:
                 introduction += f" {subsec['name']},"
-            if len(section['sections']) > 0:
-                introduction = introduction[:-1]
+            introduction = introduction[:-1]  # remove the trailing comma
 
-        if 'data' in section:
-            introduction += " => "
-            for data in section['data']:
-                if type(data) is dict:
-                    if 'name' in data:
-                        introduction += f" {data['name']}"
-                    else:
-                        introduction += f" {data=}"
-                else:
-                    introduction += f" {data=}"
+        if len(section['data']) > 0:
+            introduction += '\n' + padding + " =>"
+            for key in section['data'].keys():
+                introduction += f" {key},"
+            introduction = introduction[:-1]  # remove the trailing comma
 
     print(introduction)
 

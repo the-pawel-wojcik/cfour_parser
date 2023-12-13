@@ -98,10 +98,7 @@ def parse_xjoda_sections(xjoda):
                 section['data'] = data
 
 
-def parse_xjoda_program(xjoda, args):
-
-    if args.verbose is True:
-        pretty_introduce_section(xjoda)
+def parse_xjoda_program(xjoda):
 
     if 'sections' not in xjoda:
         xjoda['sections'] = []
@@ -126,7 +123,10 @@ def main():
         if xjoda['name'] != 'xjoda':
             continue
 
-        parse_xjoda_program(xjoda, args)
+        parse_xjoda_program(xjoda)
+
+        if args.verbose is True:
+            pretty_introduce_section(xjoda, 1)
 
     if args.json is True:
         print(json.dumps(programs))

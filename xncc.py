@@ -516,10 +516,7 @@ def parse_xncc_eom(xncc_eom):
         xncc_eom['sections'] += [eom_irrep_states]
 
 
-def parse_xncc_program(xncc, args):
-
-    if 'sections' not in xncc:
-        xncc['sections'] = list()
+def parse_xncc_program(xncc):
 
     catches = cool_lines_in_xncc(xncc)
 
@@ -543,13 +540,13 @@ def main():
         programs = find_programs(cfour_output)
 
     for program in programs:
-        if args.verbose is True:
-            pretty_introduce_section(program)
-
         if program['name'] != 'xncc':
             continue
 
-        parse_xncc_program(program, args)
+        parse_xncc_program(program)
+
+        if args.verbose is True:
+            pretty_introduce_section(program, 1)
 
     if args.json is True:
         print(json.dumps(programs))
