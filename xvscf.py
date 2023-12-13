@@ -104,48 +104,54 @@ def parse_MO_line(line):
     return mo
 
 
+def parse_MOs_listing(catch, lines, lines_offset):
+    start = catch['line']
+
+    header_pattern = re.compile(
+        r'\s*MO\s*#\s*E\(hartree\)\s*E\(eV\)\s*FULLSYM\s*COMPSYM')
+
+    header_match = header_pattern.match(lines[start+2])
+    if header_match is None:
+        raise RuntimeError(
+            "Error! The MOs listing in SCF is missing a header."
+        )
+
+    MO_TYPE_SEPARATOR = r'\+' * 77
+    occupied_start = start + 4
+    occupied_end = skip_to(MO_TYPE_SEPARATOR, lines, start + 4)
+
+    occupied = []
+    for line in lines[occupied_start:occupied_end]:
+        mo = parse_MO_line(line)
+        occupied += [mo]
+
+    virtual_end = skip_to_empty_line(lines, occupied_end)
+
+    virtual = []
+    for line in lines[occupied_end+1:virtual_end]:
+        mo = parse_MO_line(line)
+        virtual += [mo]
+
+    mos = {
+        'name': 'MOs',
+        'start': lines_offset + start,
+        'end': lines_offset + virtual_end - 1,
+        'lines': lines[start: virtual_end],
+        'sections': list(),
+        'data': {
+            'occupied': occupied,
+            'virtual': virtual,
+        }
+    }
+
+    return mos
+
+
 def turn_xvscf_catches_into_sections(catches, xvscf):
     lines = xvscf['lines']
     for catch in catches:
         if catch['name'] == 'MOs':
-            start = catch['line']
-
-            header_pattern = re.compile(
-                r'\s*MO\s*#\s*E\(hartree\)\s*E\(eV\)\s*FULLSYM\s*COMPSYM')
-
-            header_match = header_pattern.match(lines[start+2])
-            if header_match is None:
-                raise RuntimeError(
-                    "Error! The MOs listing in xvscf is missing a header."
-                )
-
-            MO_TYPE_SEPARATOR = r'\+' * 77
-            occupied_start = start + 4
-            occupied_end = skip_to(MO_TYPE_SEPARATOR, lines, start + 4)
-
-            occupied = []
-            for line in lines[occupied_start:occupied_end]:
-                mo = parse_MO_line(line)
-                occupied += [mo]
-
-            virtual_end = skip_to_empty_line(lines, occupied_end)
-
-            virtual = []
-            for line in lines[occupied_end+1:virtual_end]:
-                mo = parse_MO_line(line)
-                virtual += [mo]
-
-            mos = {
-                'name': 'MOs',
-                'start': xvscf['start'] + start,
-                'end': xvscf['start'] + virtual_end - 1,
-                'lines': lines[start: virtual_end],
-                'sections': list(),
-                'data': {
-                    'occupied': occupied,
-                    'virtual': virtual,
-                }
-            }
+            mos = parse_MOs_listing(catch, lines, xvscf['start'])
             xvscf['sections'] += [mos]
 
 
