@@ -8,6 +8,7 @@ from parsers.xjoda import parse_xjoda_program
 from parsers.xvscf import parse_xvscf_program
 from parsers.xdqcscf import parse_xdqcscf_program
 from parsers.xncc import parse_xncc_program
+from parsers.xvee import parse_xvee_program
 
 
 def get_args():
@@ -24,18 +25,18 @@ def main():
     with open(args.cfour_output, 'r') as cfour_output:
         programs = find_programs(cfour_output)
 
+    parsers = {
+        'xjoda': parse_xjoda_program,
+        'xvscf': parse_xvscf_program,
+        'xdqcscf': parse_xdqcscf_program,
+        'xncc': parse_xncc_program,
+        'xvee': parse_xvee_program,
+    }
+
     for program in programs:
-        if program['name'] == 'xjoda':
-            parse_xjoda_program(program)
-
-        if program['name'] == 'xvscf':
-            parse_xvscf_program(program)
-
-        if program['name'] == 'xdqcscf':
-            parse_xdqcscf_program(program)
-
-        if program['name'] == 'xncc':
-            parse_xncc_program(program)
+        if program['name'] in parsers:
+            parse_program = parsers[program['name']]
+            parse_program(program)
 
     if args.json is True:
         print(json.dumps(programs))
@@ -44,13 +45,9 @@ def main():
         for program in programs:
             pretty_introduce_section(program)
 
-    if args.verbose == 1:
+    if args.verbose > 0:
         for program in programs:
-            pretty_introduce_section(program)
-
-    if args.verbose == 2:
-        for program in programs:
-            pretty_introduce_section(program, 2)
+            pretty_introduce_section(program, args.verbose)
 
 
 if __name__ == "__main__":

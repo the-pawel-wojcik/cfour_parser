@@ -36,7 +36,7 @@ def str_eom_state(state):
     return pretty
 
 
-def pretty_introduce_section(section, level: int = 0):
+def pretty_introduce_section(section, level: int = 1):
     """
     A common storage data type I use is a section.
     It is a dictionary with keys:
@@ -47,10 +47,13 @@ def pretty_introduce_section(section, level: int = 0):
         'sections'
         'data'
     """
+    if level == 0:
+        return
+
     introduction = f"{section['start']:5d} - {section['end']:5d}: "
     padding = ' ' * len(introduction)
     introduction += f"{section['name']}"
-    if level > 0:
+    if level > 1:
         if len(section['sections']) > 0:
             introduction += '\n' + padding + " =>"
             for subsec in section['sections']:
