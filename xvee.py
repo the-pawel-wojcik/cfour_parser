@@ -169,7 +169,6 @@ def parse_xvee_eom_root(catch, xvee):
     return section
 
 
-
 def parse_xvee_transition_properties(catch, xvee):
     catch_line = catch['line']
     lines = xvee['lines']
@@ -270,15 +269,16 @@ def parse_xvee_transition_properties(catch, xvee):
 
     section['data'] = {
         'eom model': total_energy_match.group(1),
-        'right tdm': right_tdm,
-        'left tdm': left_tdm,
-        'dipole strength': dipole_strength,
-        'oscillator strength': oscillator_strength,
-        'norm of oscillator strength': f,
+        'Right TDM': right_tdm,
+        'Left TDM': left_tdm,
+        'Dipole strength': dipole_strength,
+        'Oscillator strength': oscillator_strength,
+        'Norm of oscillator strength': f,
         'energy': energy,
     }
 
     return section
+
 
 def main():
     args = get_args()
