@@ -5,7 +5,7 @@ import sys
 import json
 import re
 from parsers.text import INT_WS, FLOAT
-from parsers.util import skip_to
+from parsers.util import skip_to_re
 from parsers.programs import find_programs
 from parsers.text import pretty_introduce_section, print_section
 
@@ -17,6 +17,14 @@ def get_args():
     parser.add_argument('-v', '--verbose', default=0, action='count')
     args = parser.parse_args()
     return args
+
+
+def parse_xvee_program(xvee):
+    """
+    Parser of the xvee program.
+    """
+    catches = cool_lines_in_xvee(xvee)
+    turn_xvee_catches_into_sections(catches, xvee)
 
 
 def cool_lines_in_xvee(xvee):
@@ -78,6 +86,88 @@ def cool_lines_in_xvee(xvee):
             break
 
     return catches
+
+
+def turn_xvee_catches_into_sections(catches, xvee):
+    """
+    Catches are turned into sections.
+
+    Each section contains the keys: name, start, end, metadata, sections, data
+    """
+    xvee_section_parsers = {
+        # 'MO listing': #TODO,
+        'eom solution': parse_xvee_eom_root,
+        'transition properties': parse_xvee_transition_properties,
+    }
+    for catch in catches:
+        section_name = catch['name']
+        if section_name in xvee_section_parsers:
+            parser = xvee_section_parsers[section_name]
+            # cp = {
+            #     'name': section_name,
+            #     'start': xvee['start'] + start - 1,
+            #     'end': xvee['start'] + end,
+            #     'lines': lines[start-1: end+1],
+            #     'sections': list(),
+            #     'data': dict(),
+            #     'metadata': dict(),
+            # }
+            section = parser(catch, xvee)
+            xvee['sections'] += [section]
+
+
+def parse_xvee_eom_root_lines_helper(catch, xvee):
+    """
+    Finds the 'end' of the 'section' (TODO:) and produces a draft of
+    a container for the data 'section'.
+    TODO: in principle most of data comes from the next function
+    """
+    catch_line = catch['line']
+    lines = xvee['lines']
+
+    data = {}
+    data['irrep'] = {
+        '#': int(catch['match'].group(1)),
+    }
+    data['# roots'] = int(catch['match'].group(2))
+
+    eom_end = r'Total (EOMEE-CCSD) electronic energy\s+' + FLOAT + r' a\.u\.'
+    ln = catch_line
+    last_line, match = skip_to_re(eom_end, lines, ln)
+    data['eom model'] = match.group(1)
+    data['energy'] = {
+        'total': {
+            'au': float(match.group(2)),
+        },
+    }
+
+    section = {
+        'name': catch['name'],
+        'start': xvee['start'] + catch_line,
+        'end': xvee['start'] + last_line,
+        'sections': list(),
+        'lines': lines[catch_line:last_line+1],
+        'metadata': {
+            'ok': True,
+        },
+        'data': data,
+    }
+
+    return section
+
+
+def parse_xvee_eom_root(catch, xvee):
+    """
+    TODO: work in progress
+    """
+
+    # end = r'Eigenvector is saved on (CC[RL]E_\d_\d)'
+    # ln = skip_to(eom_end, xvee['lines'], )
+    section = parse_xvee_eom_root_lines_helper(catch, xvee)
+    # TODO: if the xvee ever gets well divided into subsections, this is where
+    # these subsections are parsed
+    return section
+
 
 
 def parse_xvee_transition_properties(catch, xvee):
@@ -188,43 +278,7 @@ def parse_xvee_transition_properties(catch, xvee):
         'energy': energy,
     }
 
-    xvee['sections'] += [section]
-    return
-
-
-def turn_xvee_catches_into_sections(catches, xvee):
-    """
-    Catches are turned into sections.
-
-    Each section contains the keys: name, start, end, metadata, sections, data
-    """
-    xvee_section_parsers = {
-        # 'MO listing': #TODO,
-        'transition properties': parse_xvee_transition_properties,
-    }
-    for catch in catches:
-        section_name = catch['name']
-        if section_name in xvee_section_parsers:
-            parser = xvee_section_parsers[section_name]
-            # cp = {
-            #     'name': section_name,
-            #     'start': xvee['start'] + start - 1,
-            #     'end': xvee['start'] + end,
-            #     'lines': lines[start-1: end+1],
-            #     'sections': list(),
-            #     'data': dict(),
-            #     'metadata': dict(),
-            # }
-            parser(catch, xvee)
-
-
-def parse_xvee_program(xvee):
-    """
-    Parser of the xvee program.
-    """
-    catches = cool_lines_in_xvee(xvee)
-    turn_xvee_catches_into_sections(catches, xvee)
-
+    return section
 
 def main():
     args = get_args()
