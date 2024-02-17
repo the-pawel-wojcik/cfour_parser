@@ -35,32 +35,33 @@ def cool_lines_in_xvee(xvee):
     if xvee['name'] != 'xvee':
         return
 
+    # HINT: section commented out do not have parsers yet
     highlights = [
-        {'re': r'\s*Summary of active alpha molecular orbitals:',
-         'name': 'MO listing',
-         'type': 'start',
-         },
-        {'re': r'\s*EOMEE-CCSD excitation energies will be evaluated\.',
-         'name': 'eom model',
-         'type': 'oneline',
-         },
-        {'re': r'\s*Guess vectors transform as symmetry 5\.',
-         'name': 'irrep symmetry',
-         'type': 'oneline',
-         },
+        # {'re': r'\s*Summary of active alpha molecular orbitals:',
+        #  'name': 'MO listing',
+        #  'type': 'start',
+        #  },
+        # {'re': r'\s*EOMEE-CCSD excitation energies will be evaluated\.',
+        #  'name': 'eom model',
+        #  'type': 'oneline',
+        #  },
+        # {'re': r'\s*Guess vectors transform as symmetry 5\.',
+        #  'name': 'irrep symmetry',
+        #  'type': 'oneline',
+        #  },
         {'re': r'\s*Beginning symmetry block' + INT_WS + r'\.' + INT_WS +
          r'roots requested.',
          'name': 'eom solution',
          'type': 'start',
          },
-        {'re':
-         r'\s*@TDENS-I, Largest elements of the\s*(\w+)\s*transition density',
-         'name': 'transition density',
-         'type': 'start',
-         },
+        # {'re':
+        #  r'\s*@TDENS-I, Largest elements of the\s*(\w+)\s*transition density',
+        #  'name': 'transition density',
+        #  'type': 'start',
+        #  },
         {'re': r'\s*Right Transition Moment' + (r'\s+' + FLOAT) * 3,
          'name': 'transition properties',
-         'type': 'start',
+         'type': 'start',  # this is also an end to the 'eom solution' block
          },
         # {'pattern': re.compile(r''),
         #  'name': '',
@@ -120,7 +121,11 @@ def parse_xvee_eom_root_lines_helper(catch, xvee):
     """
     Finds the 'end' of the 'section' (TODO:) and produces a draft of
     a container for the data 'section'.
-    TODO: in principle most of data comes from the next function
+    TODO: most of data should be extracted in the next function, this should
+    just slice the section
+
+    The catch finds the line:
+      Beginning symmetry block   (int).   (int) roots requested.
     """
     catch_line = catch['line']
     lines = xvee['lines']
@@ -131,6 +136,20 @@ def parse_xvee_eom_root_lines_helper(catch, xvee):
     }
     data['# roots'] = int(catch['match'].group(2))
 
+    # TODO: this is not the end of the section -- it is folled by:
+    # - a listing of the converged eigenvector
+    # - converged eigenvector normalized to one
+    # - info line: Eigenvector is saved on CCRE_4_1
+    # Optionally there are also printed:
+    # - normalization factor for lhs wavefunction (float)
+    # - Largest elements of the (LEFT|RIGHT) transition density
+    # - There are also the @SOMENAME lines with a grabage in between e.g.:
+    # @RNORM-I, Processing right-hand wavefunction.
+    # z is   0.99999999999996825
+    # danish F
+    # @TDENS-I, Largest elements of the RIGHT transition density
+    #
+    # It's hard to understand the underlying structure of the whole section.
     eom_end = r'Total (EOMEE-CCSD) electronic energy\s+' + FLOAT + r' a\.u\.'
     ln = catch_line
     last_line, match = skip_to_re(eom_end, lines, ln)
