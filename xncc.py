@@ -4,7 +4,7 @@ import argparse
 import sys
 import json
 import re
-from parsers.util import skip_to, skip_to_empty_line
+from parsers.util import skip_to, skip_to_re, skip_to_empty_line
 from parsers.programs import find_programs
 from parsers.text import FLOAT, INT, FLOAT_WS, INT_WS, pretty_introduce_section
 
@@ -325,12 +325,14 @@ def parse_xncc_eom_converged_root(converged_root):
 
 def parse_xncc_eom_root_sections(sections):
     for section in sections:
+        # TODO: there are more sections availabe for parsing. If needed one
+        # needs to wire their parsers
         if section['name'] == 'converged root':
             parse_xncc_eom_converged_root(section)
             continue
 
 
-def parse_xncc_eom_root(lines, model, line_offset):
+def parse_xncc_eom_root(lines, line_offset):
     """
     Parses an xncc's eom's irrep's root.
     """
@@ -345,9 +347,12 @@ def parse_xncc_eom_root(lines, model, line_offset):
         'lines': lines[2:ln],
     }]
 
-    ln = skip_to(
-        f"Beginning iterative solution of {model} equations", lines, ln)
+    ln, match = skip_to_re(
+        r"Beginning iterative solution of (EOMEE-CCSDT?Q?) equations",
+        lines, ln
+    )
     iterative_start = ln
+    model = match.group(1)
     ln = skip_to(f"{model} iterations converged in" + r'\s*\d+\s*' +
                  'cycles and' + FLOAT_WS + r'seconds \(' + FLOAT_WS
                  + r's/it.\) at ' + FLOAT_WS + r'Gflops/sec', lines, ln)
@@ -441,6 +446,8 @@ def parse_xncc_eom_irrep(xncc_eom, irrep_start, end_line):
     # Each EOM root output starts with a listing of the guess root
     irrep_start_line = irrep_start['line']
     irrep_lines = xncc_eom['lines'][irrep_start_line:end_line]
+
+    # Watch out: EOMEE-CCSDT uses the EOMEE-CCSD guess vector!
     guess_pattern = re.compile(r'(EOMEE-CCSDT?) guess vector:')
     detected_roots = []
     for ln, line in enumerate(irrep_lines):
@@ -448,7 +455,6 @@ def parse_xncc_eom_irrep(xncc_eom, irrep_start, end_line):
         if guess_match is None:
             continue
         detected_roots += [{
-            'model': guess_match.group(1),
             'line': ln,
         }]
 
@@ -460,11 +466,10 @@ def parse_xncc_eom_irrep(xncc_eom, irrep_start, end_line):
         else:
             end_line = detected_roots[n + 1]['line']
 
-        model = root_start['model']
         root_start_line = root_start['line']
         line_offset = xncc_eom['start'] + irrep_start_line + root_start_line
         roots += [parse_xncc_eom_root(irrep_lines[root_start_line:end_line],
-                                      model, line_offset)]
+                                      line_offset)]
 
     if len(roots) != no_states:
         print("Warning, not all roots of the irrep"
