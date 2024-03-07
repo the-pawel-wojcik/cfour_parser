@@ -42,7 +42,7 @@ def cool_lines_in_xvee(xvee):
         #  'type': 'start',
         #  },
         # {'re': r'\s*EOMEE-CCSD excitation energies will be evaluated\.',
-        #  'name': 'eom model',
+        #  'name': 'model',
         #  'type': 'oneline',
         #  },
         # {'re': r'\s*Guess vectors transform as symmetry 5\.',
@@ -153,7 +153,7 @@ def parse_xvee_eom_root_lines_helper(catch, xvee):
     eom_end = r'Total (EOMEE-CCSD) electronic energy\s+' + FLOAT + r' a\.u\.'
     ln = catch_line
     last_line, match = skip_to_re(eom_end, lines, ln)
-    data['eom model'] = match.group(1)
+    data['model'] = match.group(1)
     data['energy'] = {
         'total': {
             'au': float(match.group(2)),
@@ -287,7 +287,7 @@ def parse_xvee_transition_properties(catch, xvee):
     }
 
     section['data'] = {
-        'eom model': total_energy_match.group(1),
+        'model': total_energy_match.group(1),
         'Right TDM': right_tdm,
         'Left TDM': left_tdm,
         'Dipole strength': dipole_strength,

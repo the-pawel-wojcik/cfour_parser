@@ -416,7 +416,7 @@ def parse_xncc_eom_root(lines, model, line_offset):
         'lines': lines,
         'sections': sections,
         'data': {
-            'eom model': model,
+            'model': model,
         }
     }
 
@@ -448,7 +448,7 @@ def parse_xncc_eom_irrep(xncc_eom, irrep_start, end_line):
         if guess_match is None:
             continue
         detected_roots += [{
-            'eom model': guess_match.group(1),
+            'model': guess_match.group(1),
             'line': ln,
         }]
 
@@ -460,7 +460,7 @@ def parse_xncc_eom_irrep(xncc_eom, irrep_start, end_line):
         else:
             end_line = detected_roots[n + 1]['line']
 
-        model = root_start['eom model']
+        model = root_start['model']
         root_start_line = root_start['line']
         line_offset = xncc_eom['start'] + irrep_start_line + root_start_line
         roots += [parse_xncc_eom_root(irrep_lines[root_start_line:end_line],
