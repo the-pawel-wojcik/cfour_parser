@@ -31,6 +31,10 @@ def cool_lines_in_xjoda(xjoda):
          'name': 'control parameters',
          'type': 'start',
          },
+        {'pattern': re.compile(r'\s*Coordinates used in calculation \(QCOMP\)'),
+         'name': 'qcomp',
+         'type': 'start',
+         },
         # {'pattern': re.compile(r''),
         #  'name': '',
         #  'type': '',
@@ -78,6 +82,26 @@ def turn_xjoda_catches_into_sections(catches, xjoda):
 
             xjoda['sections'] += [cp]
 
+        elif catch['name'] == 'qcomp':
+            THE_LINE = '-' * 64
+            start = catch['line']
+            if lines[start-1] != lines[start+1] != lines[start+4] != THE_LINE:
+                print("Error in parsing the QCOMP section of xjoda",
+                      file=sys.stderr)
+
+            end = skip_to(THE_LINE, lines, start+5)
+
+            qcomp = {
+                'name': 'qcomp',
+                'start': xjoda['start'] + start - 1,
+                'end': xjoda['start'] + end,
+                'lines': lines[start-1: end+1],
+                'sections': list(),
+                'data': dict(),
+            }
+
+            xjoda['sections'] += [qcomp]
+
 
 def parse_xjoda_sections(xjoda):
     for section in xjoda['sections']:
@@ -94,6 +118,28 @@ def parse_xjoda_sections(xjoda):
                 }
             if 'data' in section:
                 section['data'].update(data)
+            else:
+                section['data'] = data
+
+        if section['name'] == 'qcomp':
+            lines = section['lines'][6:-1]
+            data = {
+                'geometry a.u.': list(),
+            }
+            for line in lines:
+                split_line = line.split()
+                zmatrix_symbol = split_line[0]
+                atomic_number = int(split_line[1])
+                xyz = [float(i) for i in split_line[2:5]]
+                data['geometry a.u.'] += [{
+                    'Z-matrix Symbol': zmatrix_symbol,
+                    'Atomic Number': atomic_number,
+                    'Coordinates': xyz,
+                }]
+
+            if 'data' in section:
+                section['data'].update(data)
+
             else:
                 section['data'] = data
 
