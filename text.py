@@ -12,23 +12,34 @@ INT_WS = r'\s*([+-]?\d+)\s*'
 FRTRN_FLOAT = r'([+-]?\d+\.\d+D-?\d+)'
 
 
-def str_eom_state(state):
+def str_eom_state(state, full: bool = False):
     """
     Return a string.
     """
-    pretty = f"{state['#']:2d}: {state['model']} state "
-    pretty += f"in irrep #{state['irrep']['#']} "
-    if 'energy #' in state['irrep'].keys() and 'name' in state['irrep'].keys():
-        pretty += "("
-        if state['irrep']['energy #'] > 1:
-            pretty += f"{state['irrep']['energy #']}"
-        pretty += f"{state['irrep']['name']}) "
-    elif 'name' in state['irrep'].keys():
-        pretty += f"({state['irrep']['name']}) "
+    pretty = ""
+    if '#' in state:
+        pretty += f"{state['#']:2d}: "
 
-    if 'transition' in state['energy'].keys():
+    if 'model' in state:
+        pretty += f"{state['model']} state "
+
+    if 'irrep' in state:
+        if '#' in state['irrep']:
+            pretty += f"in irrep #{state['irrep']['#']} "
+        if 'energy #' in state['irrep'] and 'name' in state['irrep']:
+            pretty += "("
+            if state['irrep']['energy #'] > 1:
+                pretty += f"{state['irrep']['energy #']}"
+            pretty += f"{state['irrep']['name']}) "
+        elif 'name' in state['irrep']:
+            pretty += f"({state['irrep']['name']}) "
+
+    if 'transition' in state['energy']:
         energy = state['energy']['transition']['eV']
         pretty += f"of transition energy {energy:.3f} eV."
+        if full is True:
+            energy = state['energy']['total']['au']
+            pretty += f" Total energy {energy:-10.5f} au."
     else:
         energy = state['energy']['total']['au']
         pretty += f"with total energy {energy:-10.5f} au."
