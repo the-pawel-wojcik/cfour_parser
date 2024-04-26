@@ -66,6 +66,8 @@ def cool_lines_in_xvscf(xvscf):
 
 def parse_MO_line(line):
 
+    # CFOUR outputs graphically -- things can be missing or merging together
+    # but at least their position should be the same
     split_no = 57
     numbers = line[0:split_no]
     symmetries = line[split_no:-1]
@@ -87,10 +89,13 @@ def parse_MO_line(line):
     }
 
     fullsymm = symmetries[0:8].strip()
-    compsymm = symmetries[8:].split()
+    # comp symmetry
+    irrep_name = symmetries[8:19]
+    irrep_no = symmetries[19:]
+
     irrep = {
-        'name': compsymm[0],
-        '#': int(compsymm[1][1:-1]),
+        'name': irrep_name,
+        '#': int(irrep_no[1:-1]),
     }
 
     mo = {
