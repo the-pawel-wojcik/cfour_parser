@@ -475,7 +475,7 @@ def parse_xncc_eom_irrep(xncc_eom, irrep_start, end_line):
         print("Warning, not all roots of the irrep"
               f" #{irrep_no} were parsed in xncc",
               file=sys.stderr)
-        print(f"Expected {no_states=} got {len(roots)=}")
+        print(f"Expected {no_states=} got {len(roots)=}", file=sys.stderr)
 
     irrep = {
         'name': 'irrep',
