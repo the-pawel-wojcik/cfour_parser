@@ -63,69 +63,106 @@ def cool_lines_in_xjoda(xjoda):
     return catches
 
 
+def xjoda_catch2sec_control_pars(catch, lines, start_offset):
+    """
+    Turn catch 'control parameters' of xjoda into a section template.
+    """
+    oll_korrect = True
+    THE_LINE = '-' * 67
+    start = catch['line']
+    if lines[start-1] != lines[start+1] != lines[start+4] != THE_LINE:
+        oll_korrect = False
+        print(f"Error in parsing the '{catch['name']}' section of xjoda",
+              file=sys.stderr)
+
+    end = skip_to(THE_LINE, lines, start+5)
+
+    cp = {
+            'name': catch['name'],
+            'start': start_offset + start - 1,
+            'end': start_offset + end,
+            'lines': lines[start-1: end+1],
+            'sections': list(),
+            'metadata': {
+                'ok': oll_korrect,
+                },
+            'data': dict(),
+            }
+
+    return cp
+
+
+def xjoda_catch2sec_qcomp(catch, lines, start_offset):
+    oll_korrect = True
+    THE_LINE = '-' * 64
+    start = catch['line']
+    if lines[start-1] != lines[start+1] != lines[start+4] != THE_LINE:
+        oll_korrect = False
+        print(f"Error in parsing the '{catch['name']}' section of xjoda.",
+              file=sys.stderr)
+
+    end = skip_to(THE_LINE, lines, start+5)
+
+    qcomp = {
+        'name': catch['name'],
+        'start': start_offset + start - 1,
+        'end': start_offset + end,
+        'lines': lines[start-1: end+1],
+        'sections': list(),
+        'metadata': {
+            'ok': oll_korrect,
+        },
+        'data': dict(),
+    }
+
+    return qcomp
+
+
+def xjoda_catch2sec_normal_coordinate_gradient(catch, lines, start_offset):
+    oll_korrect = True
+    THE_LINE = '-' * 71
+    start = catch['line']
+    if lines[start+1] != lines[start+4] != THE_LINE:
+        oll_korrect = False
+        print(f"Error in parsing the {catch['name']} section of xjoda.",
+              file=sys.stderr)
+
+    end = skip_to(THE_LINE, lines, start+5)
+
+    gradient = {
+        'name': catch['name'],
+        'start': start_offset + start,
+        'end': start_offset + end,
+        'lines': lines[start: end+1],
+        'sections': list(),
+        'metadata': {
+            'ok': oll_korrect,
+        },
+        'data': dict(),
+    }
+
+    return gradient
+
+
 def turn_xjoda_catches_into_sections(catches, xjoda):
+    """
+    The main job of functions in this funcion is to find the end line of each
+    section. Additionally, the funcitons in this function can do some error
+    checking.
+    """
     lines = xjoda['lines']
+    start_offset = xjoda['start']
+    turners = {
+        'control parameters': xjoda_catch2sec_control_pars,
+        'qcomp': xjoda_catch2sec_qcomp,
+        'normal coordinate gradient': xjoda_catch2sec_normal_coordinate_gradient,
+    }
+
     for catch in catches:
-        if catch['name'] == 'control parameters':
-            THE_LINE = '-' * 67
-            start = catch['line']
-            if lines[start-1] != lines[start+1] != lines[start+4] != THE_LINE:
-                print("Error in parsing the 'CFOUR Control Paramers' section",
-                      file=sys.stderr)
-
-            end = skip_to(THE_LINE, lines, start+5)
-
-            cp = {
-                'name': 'control parameters',
-                'start': xjoda['start'] + start - 1,
-                'end': xjoda['start'] + end,
-                'lines': lines[start-1: end+1],
-                'sections': list(),
-                'data': dict(),
-            }
-
-            xjoda['sections'] += [cp]
-
-        elif catch['name'] == 'qcomp':
-            THE_LINE = '-' * 64
-            start = catch['line']
-            if lines[start-1] != lines[start+1] != lines[start+4] != THE_LINE:
-                print("Error in parsing the QCOMP section of xjoda",
-                      file=sys.stderr)
-
-            end = skip_to(THE_LINE, lines, start+5)
-
-            qcomp = {
-                'name': 'qcomp',
-                'start': xjoda['start'] + start - 1,
-                'end': xjoda['start'] + end,
-                'lines': lines[start-1: end+1],
-                'sections': list(),
-                'data': dict(),
-            }
-
-            xjoda['sections'] += [qcomp]
-
-        elif catch['name'] == 'normal coordinate gradient':
-            name = catch['name']
-            THE_LINE = '-' * 71
-            start = catch['line']
-            if lines[start+1] != lines[start+4] != THE_LINE:
-                print(f"Error in parsing the {name} section of xjoda.",
-                      file=sys.stderr)
-
-            end = skip_to(THE_LINE, lines, start+5)
-
-            gradient = {
-                'name': 'normal coordinate gradient',
-                'start': xjoda['start'] + start,
-                'end': xjoda['start'] + end,
-                'lines': lines[start: end+1],
-                'sections': list(),
-                'data': dict(),
-            }
-
-            xjoda['sections'] += [gradient]
+        if catch['name'] in turners:
+            turner = turners[catch['name']]
+            section = turner(catch, lines, start_offset)
+            xjoda['sections'] += [section]
 
 
 def parse_xjoda_sections(xjoda):
