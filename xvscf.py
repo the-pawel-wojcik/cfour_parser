@@ -3,9 +3,10 @@
 import argparse
 import json
 import re
+import sys
 from parsers.util import skip_to, skip_to_empty_line
 from parsers.programs import find_programs
-from parsers.util import fortran_float_to_float
+from parsers.util import fortran_float_to_float, ParsingError
 from parsers.text import FLOAT, INT, FRTRN_FLOAT, pretty_introduce_section
 
 
@@ -76,7 +77,7 @@ def parse_MO_line(line):
                             INT + r'\s+' + FLOAT + r'\s+' + FLOAT)
     mo_match = mo_pattern.match(numbers)
     if mo_match is None:
-        raise RuntimeError(f"Listing of MOs contains an invalid line:\n{line}")
+        raise ParsingError(f"Listing of MOs contains an invalid line:\n{line}")
 
     ids = {
         'energy #': int(mo_match.group(1)),
@@ -90,7 +91,7 @@ def parse_MO_line(line):
 
     fullsymm = symmetries[0:8].strip()
     # comp symmetry
-    irrep_name = symmetries[8:19]
+    irrep_name = symmetries[8:19].strip()
     irrep_no = symmetries[19:]
 
     irrep = {
@@ -111,6 +112,7 @@ def parse_MO_line(line):
 def parse_MOs_listing(catch, lines, lines_offset):
     start = catch['line']
 
+    oll_korrect = True
     header_pattern = re.compile(
         r'\s*MO\s*#\s*E\(hartree\)\s*E\(eV\)\s*FULLSYM\s*COMPSYM')
 
@@ -119,6 +121,7 @@ def parse_MOs_listing(catch, lines, lines_offset):
         raise RuntimeError(
             "Error! The MOs listing in SCF is missing a header."
         )
+        oll_korrect = False
 
     MO_TYPE_SEPARATOR = r'\+' * 77
     occupied_start = start + 4
@@ -133,7 +136,13 @@ def parse_MOs_listing(catch, lines, lines_offset):
 
     virtual = []
     for line in lines[occupied_end+1:virtual_end]:
-        mo = parse_MO_line(line)
+        try:
+            mo = parse_MO_line(line)
+        except ParsingError as pe:
+            print(pe, file=sys.stderr)
+            oll_korrect = False
+            continue
+
         virtual += [mo]
 
     mos = {
@@ -142,6 +151,9 @@ def parse_MOs_listing(catch, lines, lines_offset):
         'end': lines_offset + virtual_end - 1,
         'lines': lines[start: virtual_end],
         'sections': list(),
+        'metadata': {
+            'ok': oll_korrect,
+            },
         'data': {
             'occupied': occupied,
             'virtual': virtual,

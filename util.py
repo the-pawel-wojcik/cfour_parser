@@ -50,3 +50,10 @@ def skip_to_empty_line(lines, ln: int):
 
 def fortran_float_to_float(frtr: str):
     return float(frtr.replace('D', 'e'))
+
+
+class ParsingError(Exception):
+    pass
+
+
+
