@@ -39,6 +39,10 @@ def cool_lines_in_xjoda(xjoda):
          'name': 'normal coordinate gradient',
          'type': 'start',
          },
+        {'pattern': re.compile(r'\s*Normal Coordinates'),
+         'name': 'normal coordinates',
+         'type': 'start',
+         },
         # {'pattern': re.compile(r''),
         #  'name': '',
         #  'type': '',
@@ -144,6 +148,27 @@ def xjoda_catch2sec_normal_coordinate_gradient(catch, lines, start_offset):
     return gradient
 
 
+def xjoda_catch2sec_normal_coordinates(catch, lines, start_offset):
+    oll_korrect = True
+    THE_LINE = '-' * 74
+    start = catch['line']
+    end = skip_to(THE_LINE, lines, start)
+
+    section = {
+        'name': catch['name'],
+        'start': start_offset + start,
+        'end': start_offset + end,
+        'lines': lines[start: end+1],
+        'sections': list(),
+        'metadata': {
+            'ok': oll_korrect,
+        },
+        'data': dict(),
+    }
+
+    return section
+
+
 def turn_xjoda_catches_into_sections(catches, xjoda):
     """
     The main job of functions in this funcion is to find the end line of each
@@ -156,6 +181,7 @@ def turn_xjoda_catches_into_sections(catches, xjoda):
         'control parameters': xjoda_catch2sec_control_pars,
         'qcomp': xjoda_catch2sec_qcomp,
         'normal coordinate gradient': xjoda_catch2sec_normal_coordinate_gradient,
+        'normal coordinates': xjoda_catch2sec_normal_coordinates,
     }
 
     for catch in catches:
