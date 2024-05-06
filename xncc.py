@@ -110,15 +110,15 @@ def get_cc_lines_from_xncc(xncc, catches):
                 }
                 continue
             print("Warrning unrecognized CC header in xncc\n"
-                  f"{catch=}", file=sys.errstr)
+                  f"{catch=}", file=sys.stderr)
 
     if cc_start_ln is None:
         print("Warning! No beginning of the CC section found in xncc",
-              file=sys.errstr)
+              file=sys.stderr)
         return
 
     if cc_end_ln is None:
-        print("Error! Problem in parsing CC of xncc.", file=sys.errstr)
+        print("Error! Problem in parsing CC of xncc.", file=sys.stderr)
         pass
 
     cc_section = {
@@ -212,10 +212,10 @@ def get_eom_lines_from_xncc(xncc, catches):
             elif catch['type'] == 'end':
                 eom_end_ln = line
                 continue
-            print("Warrning unrecognized eom header in xncc", file=sys.errstr)
+            print("Warrning unrecognized eom header in xncc", file=sys.stderr)
 
     if eom_start_ln is None:
-        print("Warning! No xncc EOM section", file=sys.errstr)
+        print("Warning! No xncc EOM section", file=sys.stderr)
         return
 
     if eom_end_ln is None:
@@ -224,7 +224,7 @@ def get_eom_lines_from_xncc(xncc, catches):
             eom_end_ln = len(xncc['lines']) - 1
         else:
             # TODO:
-            print("Error! Problem in parsing eom of xncc.", file=sys.errstr)
+            print("Error! Problem in parsing eom of xncc.", file=sys.stderr)
             pass
 
     eom_section = {
