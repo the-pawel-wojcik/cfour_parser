@@ -191,69 +191,120 @@ def turn_xjoda_catches_into_sections(catches, xjoda):
             xjoda['sections'] += [section]
 
 
+def parse_control_parameters(section):
+    """
+    Parser of the "Control Parameters" section of xjoda.
+
+    Example lines:
+BOX_POTENT           IPIAB          OFF         [  0]    ***
+BREIT                IBREIT         OFF         [  0]    ***
+BRUCK_CONV           IBRTOL          10D-  4             ***
+BRUECKNER            IBRKNR         OFF         [  0]    ***
+BUFFERSIZE           IBUFFS              4096            ***
+CACHE_RECS           ICHREC             10               ***
+
+    """
+    lines = section['lines'][6:-1]
+    data = dict()
+    for line in lines:
+        external_name = line[0:28].strip()
+        internal_name = line[28:34].strip()
+        value = line[34:-1].strip()
+        data[external_name] = {
+            'internal_name': internal_name,
+            'value': value,
+        }
+    section['data'].update(data)
+
+
+def parse_qcomp(section):
+    """
+    Parser of the "QCOMP" section of xjoda.
+
+    Example of the "QCOMP" section:
+```
+ ----------------------------------------------------------------
+         Coordinates used in calculation (QCOMP) 
+ ----------------------------------------------------------------
+ Z-matrix   Atomic            Coordinates (in bohr)
+  Symbol    Number           X              Y              Z
+ ----------------------------------------------------------------
+     X         0        -0.00000000    -1.88972729    -3.33567616
+     X         0        -0.00000000     0.00000000    -3.33567616
+     C         6        -0.00000000     0.00000000    -0.63076502
+     C         6         2.29166702     0.00000000    -2.00037448
+     C         6         2.28377565     0.00000000    -4.64994320
+     C         6         0.00000000     0.00000000    -6.00133672
+     X         0        -0.00000000     1.88972729    -3.33567616
+     C         6        -2.29166702     0.00000000    -2.00037448
+     C         6        -2.28377565     0.00000000    -4.64994320
+     O         8        -0.00000000     0.00000000     1.89970059
+     CA       20        -0.00000000    -0.00000000     5.76233465
+     H         1         4.07179557     0.00000000    -0.95103406
+     H         1         4.08301453     0.00000000    -5.66810960
+     H         1         0.00000000     0.00000000    -8.06553342
+     H         1        -4.07179557     0.00000000    -0.95103406
+     H         1        -4.08301453     0.00000000    -5.66810960
+ ----------------------------------------------------------------
+```
+    """
+    lines = section['lines'][6:-1]
+    data = {
+        'geometry a.u.': list(),
+    }
+    for line in lines:
+        split_line = line.split()
+        zmatrix_symbol = split_line[0]
+        atomic_number = int(split_line[1])
+        xyz = [float(i) for i in split_line[2:5]]
+        data['geometry a.u.'] += [{
+            'Z-matrix Symbol': zmatrix_symbol,
+            'Atomic Number': atomic_number,
+            'Coordinates': xyz,
+        }]
+
+    section['data'].update(data)
+
+
+def parse_normal_coordinate_gradient(section):
+    """
+    TODO: add an example of the "Normal coordinate gradient" section.
+    """
+    lines = section['lines'][5:-1]
+    data = {
+        'Normal Coordinate Gradient': list(),
+    }
+    for line in lines:
+        split_line = line.split()
+        mode_no = int(split_line[0])
+        frequency = float(split_line[1])
+        grad_au = float(split_line[2])
+        grad_cm = float(split_line[3])
+        grad_eV = float(split_line[4])
+        ratio = float(split_line[4])
+        data['Normal Coordinate Gradient'] += [{
+            'mode #': mode_no,
+            'omega': frequency,
+            'dE/dQ, a.u.': grad_au,
+            'dE/dQ, cm-1': grad_cm,
+            'dE/dQ, eV': grad_eV,
+            'dE/dQ/omega, relative': ratio,
+        }]
+
+    section['data'].update(data)
+
+
 def parse_xjoda_sections(xjoda):
+    parsers = {
+        'control parameters': parse_control_parameters,
+        'qcomp': parse_qcomp,
+        'normal coordinate gradient': parse_normal_coordinate_gradient,
+    }
     for section in xjoda['sections']:
-        if section['name'] == 'control parameters':
-            lines = section['lines'][6:-1]
-            data = dict()
-            for line in lines:
-                external_name = line[0:28].strip()
-                internal_name = line[28:34].strip()
-                value = line[34:-1].strip()
-                data[external_name] = {
-                    'internal_name': internal_name,
-                    'value': value,
-                }
-            if 'data' in section:
-                section['data'].update(data)
-            else:
-                section['data'] = data
-
-        if section['name'] == 'qcomp':
-            lines = section['lines'][6:-1]
-            data = {
-                'geometry a.u.': list(),
-            }
-            for line in lines:
-                split_line = line.split()
-                zmatrix_symbol = split_line[0]
-                atomic_number = int(split_line[1])
-                xyz = [float(i) for i in split_line[2:5]]
-                data['geometry a.u.'] += [{
-                    'Z-matrix Symbol': zmatrix_symbol,
-                    'Atomic Number': atomic_number,
-                    'Coordinates': xyz,
-                }]
-
-            if 'data' in section:
-                section['data'].update(data)
-
-            else:
-                section['data'] = data
-
-        if section['name'] == 'normal coordinate gradient':
-            lines = section['lines'][5:-1]
-            data = {
-                'Normal Coordinate Gradient': list(),
-            }
-            for line in lines:
-                split_line = line.split()
-                mode_no = int(split_line[0])
-                frequency = float(split_line[1])
-                grad_au = float(split_line[2])
-                grad_cm = float(split_line[3])
-                grad_eV = float(split_line[4])
-                ratio = float(split_line[4])
-                data['Normal Coordinate Gradient'] += [{
-                    'mode #': mode_no,
-                    'omega': frequency,
-                    'dE/dQ, a.u.': grad_au,
-                    'dE/dQ, cm-1': grad_cm,
-                    'dE/dQ, eV': grad_eV,
-                    'dE/dQ/omega, relative': ratio,
-                }]
-
-            section['data'].update(data)
+        name = section['name']
+        if name in parsers:
+            parse = parsers[name]
+            parse(section)
 
 
 def parse_xjoda_program(xjoda):
