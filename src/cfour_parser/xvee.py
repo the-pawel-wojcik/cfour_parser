@@ -1,13 +1,11 @@
 #!/usr/bin/env python3
 
 import argparse
-import sys
 import json
 import re
-from parsers.text import INT_WS, FLOAT
-from parsers.util import skip_to_re
-from parsers.programs import find_programs
-from parsers.text import pretty_introduce_section, print_section
+from cfour_parser.util import skip_to_re
+from cfour_parser.programs import find_programs
+from cfour_parser.text import INT_WS, FLOAT, pretty_introduce_section, print_section
 
 
 def get_args():

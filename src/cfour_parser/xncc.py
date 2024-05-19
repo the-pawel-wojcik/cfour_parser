@@ -4,9 +4,10 @@ import argparse
 import sys
 import json
 import re
-from parsers.util import skip_to, skip_to_re, skip_to_empty_line
-from parsers.programs import find_programs
-from parsers.text import FLOAT, INT, FLOAT_WS, INT_WS, pretty_introduce_section
+from cfour_parser.util import skip_to, skip_to_re, skip_to_empty_line
+from cfour_parser.programs import find_programs
+from cfour_parser.text import FLOAT, INT, FLOAT_WS, INT_WS, \
+    pretty_introduce_section
 
 
 def get_args():

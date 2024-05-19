@@ -3,9 +3,9 @@
 import argparse
 import json
 import re
-from parsers.programs import find_programs
-from parsers.text import FLOAT, pretty_introduce_section
-from parsers.xvscf import parse_MOs_listing
+from cfour_parser.programs import find_programs
+from cfour_parser.text import FLOAT, pretty_introduce_section
+from cfour_parser.xvscf import parse_MOs_listing
 
 
 def get_args():

@@ -54,6 +54,3 @@ def fortran_float_to_float(frtr: str):
 
 class ParsingError(Exception):
     pass
-
-
-

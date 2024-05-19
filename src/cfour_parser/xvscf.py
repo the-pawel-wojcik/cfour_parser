@@ -4,10 +4,10 @@ import argparse
 import json
 import re
 import sys
-from parsers.util import skip_to, skip_to_empty_line
-from parsers.programs import find_programs
-from parsers.util import fortran_float_to_float, ParsingError
-from parsers.text import FLOAT, INT, FRTRN_FLOAT, pretty_introduce_section
+from cfour_parser.util import skip_to, skip_to_empty_line
+from cfour_parser.programs import find_programs
+from cfour_parser.util import fortran_float_to_float, ParsingError
+from cfour_parser.text import FLOAT, INT, FRTRN_FLOAT, pretty_introduce_section
 
 
 def get_args():

@@ -2,13 +2,13 @@
 
 import argparse
 import json
-from parsers.text import pretty_introduce_section
-from parsers.programs import find_programs
-from parsers.xjoda import parse_xjoda_program
-from parsers.xvscf import parse_xvscf_program
-from parsers.xdqcscf import parse_xdqcscf_program
-from parsers.xncc import parse_xncc_program
-from parsers.xvee import parse_xvee_program
+from cfour_parser.text import pretty_introduce_section
+from cfour_parser.programs import find_programs
+from cfour_parser.xjoda import parse_xjoda_program
+from cfour_parser.xvscf import parse_xvscf_program
+from cfour_parser.xdqcscf import parse_xdqcscf_program
+from cfour_parser.xncc import parse_xncc_program
+from cfour_parser.xvee import parse_xvee_program
 
 
 def get_args():

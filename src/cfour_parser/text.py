@@ -1,5 +1,5 @@
 """
-A collection of helper functions.
+A collection of helper functions and constants.
 """
 
 # regular expression for matching floats
