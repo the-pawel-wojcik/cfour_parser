@@ -43,6 +43,10 @@ def cool_lines_in_xjoda(xjoda):
          'name': 'normal coordinates',
          'type': 'start',
          },
+        {'pattern': re.compile(r'\s*current gradient vector'),
+         'name': 'cartesian gradient',
+         'type': 'start',
+         },
         # {'pattern': re.compile(r''),
         #  'name': '',
         #  'type': '',
@@ -82,16 +86,16 @@ def xjoda_catch2sec_control_pars(catch, lines, start_offset):
     end = skip_to(THE_LINE, lines, start+5)
 
     cp = {
-            'name': catch['name'],
-            'start': start_offset + start - 1,
-            'end': start_offset + end,
-            'lines': lines[start-1: end+1],
-            'sections': list(),
-            'metadata': {
-                'ok': oll_korrect,
-                },
-            'data': dict(),
-            }
+        'name': catch['name'],
+        'start': start_offset + start - 1,
+        'end': start_offset + end,
+        'lines': lines[start-1: end+1],
+        'sections': list(),
+        'metadata': {
+            'ok': oll_korrect,
+        },
+        'data': dict(),
+    }
 
     return cp
 
@@ -169,6 +173,37 @@ def xjoda_catch2sec_normal_coordinates(catch, lines, start_offset):
     return section
 
 
+def xjoda_catch2sec_cartesian_gradient(catch, lines, start_offset):
+    oll_korrect = True
+    start = catch['line']
+    # TODO: This section does not have any clear end
+    # endline_re = r'\s*@CHECKOUT-I, Total execution time \(CPU/WALL\):'
+    # endline_re += r'\s+(\d*\.\d+)/\s+(\d+\.\d+) seconds\.'
+    # end, match = skip_to_re(endline_re, lines, start)
+
+    good_line_re = r'\s+-?\d+\.\d+' * 3  # three floats and that's all
+    good_line_pattern = re.compile(good_line_re)
+    for ln, line in enumerate(lines[start+1:]):
+        re_match = good_line_pattern.match(line)
+        if re_match is None:
+            break
+    end = 1 + ln  # the line one past start satisfies ln = 0
+
+    section = {
+        'name': catch['name'],
+        'start': start_offset + start,
+        'end': start_offset + start + end - 1,
+        'lines': lines[start: start + end],
+        'sections': list(),
+        'metadata': {
+            'ok': oll_korrect,
+        },
+        'data': dict(),
+    }
+
+    return section
+
+
 def turn_xjoda_catches_into_sections(catches, xjoda):
     """
     The main job of functions in this funcion is to find the end line of each
@@ -180,6 +215,7 @@ def turn_xjoda_catches_into_sections(catches, xjoda):
     turners = {
         'control parameters': xjoda_catch2sec_control_pars,
         'qcomp': xjoda_catch2sec_qcomp,
+        'cartesian gradient': xjoda_catch2sec_cartesian_gradient,
         'normal coordinate gradient': xjoda_catch2sec_normal_coordinate_gradient,
         'normal coordinates': xjoda_catch2sec_normal_coordinates,
     }
@@ -294,6 +330,35 @@ def parse_normal_coordinate_gradient(section):
     section['data'].update(data)
 
 
+def parse_cartesian_gradient(section):
+    """
+    TODO: add an example of the "Cartesian gradient" section.
+    Example:
+        ```cfour
+  current gradient vector 
+        0.000000000000000        0.000000000000000       -0.136467974195249
+        0.000000000000000        0.000000000000000        0.129273721401639
+        0.000000000000000        0.001423576395538        0.003597126396810
+        0.000000000000000       -0.001423576395538        0.003597126396810
+        ```
+    """
+    data_lines = section['lines'][1:]
+    data = {
+        'Cartesian Gradient': list(),
+    }
+    for line in data_lines:
+        split_line = line.split()
+        # TODO: this can break ...
+        x, y, z = [float(i) for i in split_line]
+        data['Cartesian Gradient'] += [{
+            'x': x,
+            'y': y,
+            'z': z,
+        }]
+
+    section['data'].update(data)
+
+
 def parse_normal_coordinates(section):
     """
     Example of the "Normal Coordinates" section
@@ -401,13 +466,14 @@ def parse_normal_coordinates(section):
 
     section['data'].update({
         'normal coordinates': normal_coordinates,
-        })
+    })
 
 
 def parse_xjoda_sections(xjoda):
     parsers = {
         'control parameters': parse_control_parameters,
         'qcomp': parse_qcomp,
+        'cartesian gradient': parse_cartesian_gradient,
         'normal coordinate gradient': parse_normal_coordinate_gradient,
         'normal coordinates': parse_normal_coordinates,
     }
