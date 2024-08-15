@@ -31,6 +31,11 @@ def cool_lines_in_xjoda(xjoda):
          'name': 'control parameters',
          'type': 'start',
          },
+        {'pattern': re.compile(
+            r'\s*The full molecular point group is\s+([a-zA-Z0-9]+)\s*\.'),
+         'name': 'point group',
+         'type': 'start',
+         },
         {'pattern': re.compile(r'\s*Coordinates used in calculation \(QCOMP\)'),
          'name': 'qcomp',
          'type': 'start',
@@ -69,6 +74,30 @@ def cool_lines_in_xjoda(xjoda):
             break
 
     return catches
+
+
+def xjoda_catch2sec_point_group(catch, lines, start_offset):
+    oll_korrect = True
+    THE_LINE = '*' * 80
+    start = catch['line']
+    if lines[start-1] != lines[start+3] != THE_LINE:
+        oll_korrect = False
+        print(f"Error in parsing the '{catch['name']}' section of xjoda",
+              file=sys.stderr)
+
+    cp = {
+        'name': catch['name'],
+        'start': start_offset + start - 1,
+        'end': start_offset + start + 3,
+        'lines': lines[start-1: start+4],
+        'sections': list(),
+        'metadata': {
+            'ok': oll_korrect,
+        },
+        'data': dict(),
+    }
+
+    return cp
 
 
 def xjoda_catch2sec_control_pars(catch, lines, start_offset):
@@ -214,9 +243,11 @@ def turn_xjoda_catches_into_sections(catches, xjoda):
     start_offset = xjoda['start']
     turners = {
         'control parameters': xjoda_catch2sec_control_pars,
+        'point group': xjoda_catch2sec_point_group,
         'qcomp': xjoda_catch2sec_qcomp,
         'cartesian gradient': xjoda_catch2sec_cartesian_gradient,
-        'normal coordinate gradient': xjoda_catch2sec_normal_coordinate_gradient,
+        'normal coordinate gradient':
+        xjoda_catch2sec_normal_coordinate_gradient,
         'normal coordinates': xjoda_catch2sec_normal_coordinates,
     }
 
@@ -250,6 +281,61 @@ CACHE_RECS           ICHREC             10               ***
             'internal_name': internal_name,
             'value': value,
         }
+    section['data'].update(data)
+
+
+def parse_point_group(section):
+    """
+    Parser of part of the CFOUR that looks like this:
+********************************************************************************
+   The full molecular point group is D2h .
+   The largest Abelian subgroup of the full molecular point group is D2h .
+   The computational point group is D2h .
+********************************************************************************
+    """
+    lines = section['lines'][1:-1]
+    data = dict()
+    match_full_group = re.match(
+        r'\s+The full molecular point group is ([a-zA-Z0-9]+)\s*\.',
+        lines[0]
+    )
+    if match_full_group is None:
+        print(
+            "Error: the full molecular point group is not detected in line:\n\t"
+            f"{lines[0][:-1]}", file=sys.stderr
+        )
+        section['metadata']['ok'] = False
+    else:
+        data['full molecular point group'] = match_full_group.group(1)
+
+    match_largest_abelian_group = re.match(
+        r'\s+The largest Abelian subgroup of the full molecular point group is'
+        r' ([a-zA-Z0-9]+)\s*\.',
+        lines[1]
+    )
+    if match_largest_abelian_group is None:
+        print(
+            "Error: the largest abelian subgroup is not detected in line:\n\t"
+            f"{lines[1][:-1]}", file=sys.stderr
+        )
+        section['metadata']['ok'] = False
+    else:
+        data['largest Abelian subgroup'] = match_largest_abelian_group.group(1)
+
+    # Third line
+    match_comp_group = re.match(
+        r'\s+The computational point group is ([a-zA-Z0-9]+)\s*\.',
+        lines[2]
+    )
+    if match_comp_group is None:
+        print(
+            "Error: the computational point group is missing in line:\n\t"
+            f"{lines[2][:-1]}", file=sys.stderr
+        )
+        section['metadata']['ok'] = False
+    else:
+        data['computational point group'] = match_comp_group.group(1)
+
     section['data'].update(data)
 
 
@@ -472,6 +558,7 @@ def parse_normal_coordinates(section):
 def parse_xjoda_sections(xjoda):
     parsers = {
         'control parameters': parse_control_parameters,
+        'point group': parse_point_group,
         'qcomp': parse_qcomp,
         'cartesian gradient': parse_cartesian_gradient,
         'normal coordinate gradient': parse_normal_coordinate_gradient,
