@@ -1,6 +1,6 @@
 [project]
 name = "cfour_parser"
-version = "0.0.1"
+version = "0.0.3"
 description = "Parser of the CFOUR output."
 dependencies = [
     "requests",

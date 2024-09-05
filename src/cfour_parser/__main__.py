@@ -8,6 +8,7 @@ from cfour_parser.xjoda import parse_xjoda_program
 from cfour_parser.xvscf import parse_xvscf_program
 from cfour_parser.xdqcscf import parse_xdqcscf_program
 from cfour_parser.xncc import parse_xncc_program
+from cfour_parser.xvcc import parse_xvcc_program
 from cfour_parser.xvee import parse_xvee_program
 
 
@@ -30,6 +31,7 @@ def main():
         'xvscf': parse_xvscf_program,
         'xdqcscf': parse_xdqcscf_program,
         'xncc': parse_xncc_program,
+        'xvcc': parse_xvcc_program,
         'xvee': parse_xvee_program,
     }
 
